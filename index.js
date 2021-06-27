@@ -1,5 +1,4 @@
-var app = require('express')();
-var http = require('http').Server(app);
+var app = express();
 var io = require('socket.io')(http,{
     cors: {
     origin: 'https://topodos.000webhostapp.com'
@@ -170,6 +169,4 @@ io.on("connection", function (socket) {
     });
 });
 
-http.listen(3000, function(){
-console.log('listening on port 3000');
-});
+var server = app.listen(3000);

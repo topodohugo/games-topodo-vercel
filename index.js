@@ -177,7 +177,7 @@ io.on("connection", function (socket) {
         console.log("[SERVER] Desconected");
 
         let userroom = userRoom[socket.id];
-
+        
         if(usersInRoom[userroom]){
             for(let i = 0; i<usersInRoom[userroom].length; i++){
                 if(usersInRoom[userroom][i] == socketToUser[socket.id]){

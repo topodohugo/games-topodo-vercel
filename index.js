@@ -48,7 +48,29 @@ io.on("connection", function (socket) {
     });
 
     socket.on("loadList", function(){
-        socket.emit("newRoom", createdRooms);
+        let loted = [];
+
+        for(let i = 0; i<Object.values(usersInRoom).length;i++){
+            let thisRoom = usersInRoom[Object.keys(usersInRoom)[i]];
+
+            if(thisRoom.length >= 3){
+                loted.push(Object.keys(usersInRoom)[i]);
+            };
+        };
+        
+        socket.emit("newRoom", createdRooms, loted);
+    });
+
+    socket.on("inGame", function(username){
+        let inRoom;
+
+        if(userRoom[username]){
+            inRoom = true;
+        }else{
+            inRoom = false;
+        };
+
+        socket.emit("inGame", inRoom);
     });
 
     socket.on("joinRoom", function(arg){
@@ -57,10 +79,16 @@ io.on("connection", function (socket) {
         let simbol = arg[2];
         let existSimbol = false;
 
+        if(usersInRoom[actualRoom].length >= 3){
+            socket.emit("lotedRoom");
+        }else{
         roomTurn[actualRoom].push(username);
         userRoom[username] = actualRoom;
         userRoom[socket.id] = actualRoom;
         usersInRoom[actualRoom].push(username);
+        if(waitList[actualRoom]){
+            waitList[actualRoom].push(username);
+        };
         socketToUser[socket.id] = username;
         io.in(actualRoom).emit("roomTurn", roomTurn[actualRoom]);
         socket.emit("roomTurn", roomTurn[actualRoom]);
@@ -86,6 +114,7 @@ io.on("connection", function (socket) {
                         //Sala Lotou
                         io.in(actualRoom).emit("initRoom");
                         socket.emit("initRoom");
+                        io.emit("newLotedRoom", actualRoom);
                     }
                 }
             }
@@ -94,10 +123,10 @@ io.on("connection", function (socket) {
         socket.join(actualRoom);
         
         io.in(actualRoom).emit("updateUsers", usersInRoom[actualRoom], simbolsInRoom[actualRoom]);
+        };
     });
 
     socket.on("modifyGameStatus", function(arg){
-        console.log("CHEGOU AQUI")
         let status = arg[0];
         let room = arg[1];
         
@@ -115,24 +144,40 @@ io.on("connection", function (socket) {
 
         waitList[room].push(user);
 
-        if(waitList[room].length == 3){
+        if(waitList[room] && waitList[room].length > 3){
+            delete waitList[room];
+            waitList[room] = [];
+            waitList[room].push(user);
+        };
+
+        if(waitList[room] && waitList[room].length == 3){
             socket.emit("waitingList", true);
-            io.in(room).emit("waitingList", true)
+            io.in(room).emit("waitingList", true);
+            waitList[room] = [];
         }else{
             socket.emit("waitingList", false);
         }
-        setTimeout(function(){
-            if(waitList[room].length < 3){
+
+        let intervalVerify = setInterval(function(){
+            if(waitList[room] && waitList[room].length == 3){
+                clearInterval(timer);
+                clearInterval(intervalVerify);
+            }
+        }, 1000);
+        let timer = setTimeout(function(){
+            if(waitList[room] && waitList[room].length < 3){
                 socket.emit("roomEncerred");
                 io.in(room).emit("roomEncerred");
-                delete waitList[room];
+                waitList[room] = [];
             }
         }, 30000);
     });
 
     socket.on('disconnect', function() {
         console.log("[SERVER] Desconected");
+
         let userroom = userRoom[socket.id];
+
         if(usersInRoom[userroom]){
             for(let i = 0; i<usersInRoom[userroom].length; i++){
                 if(usersInRoom[userroom][i] == socketToUser[socket.id]){
@@ -165,6 +210,7 @@ io.on("connection", function (socket) {
 
         io.in(userroom).emit("updateUsers", usersInRoom[userroom], simbolsInRoom[userroom]);
         io.in(userroom).emit("userLeft");
+        io.emit("unlockRoom", userroom);
         socket.leave(userroom);
     });
 });

@@ -2,10 +2,8 @@ const app = require('express')();
 const http = require('http').Server(app);
 var io = require('socket.io')(http,{
     cors: {
-    origin: 'https://topodos.000webhostapp.com'
-    },
-    cookie: true
-  });
+    origin: "https://topodos.000webhostapp.com"
+  }});
 
 let createdRooms = []; // 0-> room name 1->usercreator
 let usersInRoom = new Object();

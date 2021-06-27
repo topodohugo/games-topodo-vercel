@@ -1,9 +1,6 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http,{
-    cors: {
-      origin: 'https://topodos.000webhostapp.com',
-    },
     cookie: true
   });
 
@@ -19,6 +16,7 @@ let waitList = new Object();
 app.get('/', function(req, res){
 res.send('Servidor de conexão online');
 });
+io.origins(['*']);
 
 io.on("connection", function (socket) {
     console.log('user connected in localhost server');
